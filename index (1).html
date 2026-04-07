@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ScriptBoost — AI Script Writer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--surface:#161616;--surface2:#1e1e1e;--border:#2a2a2a;
+  --accent:#e8ff57;--accent2:#ff6b6b;--accent3:#57e8c0;
+  --text:#f0f0f0;--muted:#888;--red:#ff6b6b;
+  --font-display:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+.bg-pattern{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-pattern canvas{position:absolute;inset:0;width:100%;height:100%}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(12,12,12,0.96);backdrop-filter:blur(20px);z-index:100}
+.logo{font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}
+.logo span{color:var(--accent)}
+.badge{background:rgba(232,255,87,0.1);color:var(--accent);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 12px;border-radius:6px;border:1px solid rgba(232,255,87,0.2)}
+.auth-btn-outline{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.3px;padding:8px 18px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer;transition:all .2s}
+.auth-btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.auth-btn-filled{font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.3px;padding:8px 18px;border-radius:7px;border:none;background:var(--accent);color:#0c0c0c;cursor:pointer;transition:all .2s;box-shadow:0 0 16px rgba(232,255,87,0.25)}
+.auth-btn-filled:hover{opacity:.88;box-shadow:0 0 24px rgba(232,255,87,0.4);transform:translateY(-1px)}
+.auth-btn-filled:active{transform:translateY(0)}
+/* ─── Voice match panel — more visible ─── */
+.voice-match-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 16px;background:rgba(232,255,87,0.06);border:1.5px solid rgba(232,255,87,0.25);border-radius:8px;transition:all .2s;user-select:none}
+.voice-match-toggle:hover{border-color:rgba(232,255,87,0.5);background:rgba(232,255,87,0.09)}
+.voice-match-toggle.active{border-color:var(--accent);background:rgba(232,255,87,0.08)}
+.voice-match-icon{font-size:14px;opacity:.7}
+.voice-match-label{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;flex:1}
+.voice-match-toggle.active .voice-match-label{color:var(--accent)}
+.voice-match-arrow{font-size:10px;color:var(--muted);transition:transform .2s}
+.voice-match-toggle.active .voice-match-arrow{transform:rotate(180deg);color:var(--accent)}
+.voice-match-panel{display:none;flex-direction:column;gap:10px;padding:14px;background:var(--surface);border:1px solid rgba(232,255,87,0.15);border-top:none;border-radius:0 0 8px 8px;margin-top:-8px}
+.voice-match-panel.open{display:flex}
+.voice-match-hint{font-size:11px;color:var(--muted);line-height:1.6}
+.voice-match-hint strong{color:#aaa}
+.voice-profile-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(232,255,87,0.1);border:1px solid rgba(232,255,87,0.25);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--accent);font-family:var(--font-display)}
+.voice-profile-badge .vp-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.btn-analyze-style{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.3px;padding:8px 16px;border-radius:7px;cursor:pointer;transition:all .2s;align-self:flex-start}
+.btn-analyze-style:hover{border-color:var(--accent);color:var(--accent)}
+.btn-analyze-style:disabled{opacity:.4;cursor:not-allowed}
+.btn-clear-style{background:none;border:none;color:#444;font-size:11px;cursor:pointer;padding:0;transition:color .2s}
+.btn-clear-style:hover{color:var(--red)}
+/* ─── Did this work? ─── */
+.did-it-work-bar{padding:16px 18px;border-top:2px solid rgba(232,255,87,0.2);background:rgba(232,255,87,0.04);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.btn-did-work{display:flex;align-items:center;gap:8px;background:var(--accent);color:#0c0c0c;border:none;border-radius:8px;font-family:var(--font-display);font-size:13px;font-weight:800;letter-spacing:.3px;padding:11px 22px;cursor:pointer;transition:all .2s;box-shadow:0 0 18px rgba(232,255,87,0.2)}
+.btn-did-work:hover{opacity:.88;box-shadow:0 0 28px rgba(232,255,87,0.35);transform:translateY(-1px)}
+.btn-did-work:active{transform:translateY(0)}
+.did-work-hint{font-size:11px;color:var(--muted);line-height:1.5}
+/* Performance form — inline, slides open */
+.perf-form{display:none;flex-direction:column;gap:12px;padding:16px 18px;border-top:1px solid rgba(232,255,87,0.15);background:rgba(232,255,87,0.03)}
+.perf-form.open{display:flex}
+.perf-form-title{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.perf-views-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.perf-views-input{background:var(--surface);border:1.5px solid rgba(232,255,87,0.3);border-radius:8px;color:var(--text);font-family:var(--font-display);font-size:20px;font-weight:800;padding:10px 16px;width:160px;outline:none;transition:border-color .2s;text-align:center}
+.perf-views-input:focus{border-color:var(--accent)}
+.perf-views-input::placeholder{color:#333;font-size:13px;font-weight:400}
+.perf-views-label{font-size:12px;color:var(--muted)}
+.perf-toggle-row{display:flex;gap:8px}
+.perf-toggle-btn{flex:1;padding:9px;border-radius:7px;border:1.5px solid var(--border);background:none;color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.perf-toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
+.perf-toggle-btn.selected-yes{border-color:var(--accent3);background:rgba(87,232,192,0.1);color:var(--accent3)}
+.perf-toggle-btn.selected-no{border-color:var(--accent2);background:rgba(255,107,107,0.08);color:var(--accent2)}
+.btn-submit-perf{background:var(--accent);color:#0c0c0c;border:none;border-radius:7px;font-family:var(--font-display);font-size:12px;font-weight:800;padding:10px 22px;cursor:pointer;transition:all .2s;align-self:flex-start}
+.btn-submit-perf:hover{opacity:.88}
+.btn-submit-perf:disabled{opacity:.4;cursor:not-allowed}
+.perf-success{font-size:12px;color:var(--accent3);display:none;align-items:center;gap:6px}
+/* ─── Trends bar ─── */
+.trends-bar{display:flex;flex-direction:column;gap:7px}
+.trends-header{display:flex;align-items:center;gap:8px}
+.trends-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.trends-refresh{background:none;border:none;color:#444;font-size:11px;cursor:pointer;padding:2px 4px;border-radius:4px;transition:color .2s;line-height:1}
+.trends-refresh:hover{color:var(--accent)}
+.trends-refresh.spinning{animation:spin .7s linear infinite;display:inline-block}
+.trends-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:26px}
+.trend-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:11px;font-weight:600;padding:4px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:var(--font-body)}
+.trend-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,255,87,0.05)}
+.trend-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(232,255,87,0.08)}
+.trend-chip-skeleton{background:var(--surface2);border:1px solid var(--border);border-radius:20px;height:26px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}
+
+/* ─── Mode selector ─── */
+.mode-selector{padding:32px 48px 0;position:relative;z-index:1}
+.mode-tabs{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content}
+.mode-tab{font-family:var(--font-display);font-size:13px;font-weight:700;padding:10px 24px;border-radius:7px;border:none;cursor:pointer;transition:all .2s;background:none;color:var(--muted);letter-spacing:.3px}
+.mode-tab.active{background:var(--accent);color:#0c0c0c}
+.mode-tab:not(.active):hover{color:var(--text)}
+
+/* ─── Main layout ─── */
+.main{display:grid;grid-template-columns:1fr 1fr;position:relative;z-index:1;min-height:calc(100vh - 160px)}
+.input-panel{border-right:1px solid var(--border);padding:28px 48px;display:flex;flex-direction:column;gap:16px}
+.output-panel{padding:28px 48px;display:flex;flex-direction:column;gap:16px}
+
+/* ─── Mode panels ─── */
+.mode-panel{display:none;flex-direction:column;gap:16px}
+.mode-panel.active{display:flex}
+
+/* ─── Form ─── */
+.field-group{display:flex;flex-direction:column;gap:5px}
+.flabel{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.flabel .opt{font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:#444}
+.finput,.ftextarea{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13.5px;padding:10px 14px;width:100%;outline:none;transition:border-color .2s}
+.finput:focus,.ftextarea:focus{border-color:var(--accent)}
+.finput::placeholder,.ftextarea::placeholder{color:#444}
+.ftextarea{line-height:1.8;resize:vertical;min-height:160px}
+.fselect{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13.5px;padding:10px 14px;width:100%;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+
+/* ─── Platforms ─── */
+.platforms{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.plat-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s;color:#555;font-family:var(--font-body)}
+.plat-btn:hover{border-color:#555;color:var(--text)}
+.plat-btn.active{border-color:var(--accent);background:rgba(232,255,87,0.06);color:var(--accent)}
+.plat-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.plat-name{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+
+/* ─── Tags ─── */
+.tags-main-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag-chip{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:#555;font-size:11px;font-weight:600;padding:4px 10px;cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.tag-chip:hover{border-color:var(--accent);color:var(--accent)}
+.btn-more-tags{background:none;border:1px dashed #333;border-radius:6px;color:#444;font-size:11px;font-weight:600;padding:4px 10px;cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.btn-more-tags:hover{border-color:var(--accent);color:var(--accent)}
+.tag-drawer{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:none;flex-direction:column;gap:10px;margin-top:4px}
+.tag-drawer.open{display:flex}
+.tag-search-input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font-body);font-size:12px;padding:8px 12px;width:100%;outline:none}
+.tag-cat-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#444;padding-top:4px}
+.tag-cat-row{display:flex;flex-wrap:wrap;gap:5px}
+.drawer-chip{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:#555;font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.drawer-chip:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* ─── Stats bar ─── */
+.stats-bar{display:flex;gap:16px;padding:8px 0 4px;border-top:1px solid var(--border)}
+.stat-item{font-size:12px;color:var(--muted)}
+.stat-item strong{color:var(--text);font-weight:500}
+
+/* ─── Buttons ─── */
+.btn-main{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--accent);color:#0c0c0c;border:none;border-radius:8px;font-family:var(--font-display);font-size:14px;font-weight:800;letter-spacing:.3px;padding:15px 32px;cursor:pointer;transition:transform .15s,opacity .15s;width:100%}
+.btn-main:hover{transform:translateY(-1px);opacity:.9}
+.btn-main:active{transform:translateY(0)}
+.btn-main:disabled{opacity:.35;cursor:not-allowed;transform:none}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Empty state ─── */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:60px 20px}
+.empty-state p{font-size:13px;max-width:240px;line-height:1.7;color:#444}
+
+/* ─── Loading ─── */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:80px 20px}
+.pct-number{font-family:var(--font-display);font-size:68px;font-weight:800;letter-spacing:-3px;line-height:1;color:var(--accent);transition:all .5s ease}
+.pct-bar-track{width:100%;max-width:260px;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+.pct-bar-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .5s ease}
+.pct-step{font-size:12px;color:var(--muted);text-align:center;min-height:18px}
+.pct-note{font-size:11px;color:#333;text-align:center;max-width:220px;line-height:1.6;margin-top:2px}
+
+/* ─── Results ─── */
+.insights-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeUp .3s ease both}
+.ins-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ins-row{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.ins-block .ins-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.ins-block p{font-size:13px;line-height:1.7;color:#aaa}
+.tag-pill{font-family:var(--font-display);font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px}
+.pill-topic{background:rgba(232,255,87,0.1);color:var(--accent);border:1px solid rgba(232,255,87,0.2)}
+.pill-audience{background:rgba(255,107,107,0.1);color:var(--accent2);border:1px solid rgba(255,107,107,0.2)}
+.pill-platform{background:rgba(87,232,192,0.08);color:var(--accent3);border:1px solid rgba(87,232,192,0.2)}
+
+/* ─── Score cards ─── */
+.score-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;animation:fadeUp .3s ease both}
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.score-card.improved{border-color:rgba(232,255,87,.25)}
+.score-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.score-head-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.score-head-label.imp{color:var(--accent)}
+.score-overall{font-family:var(--font-display);font-size:26px;font-weight:800;line-height:1}
+.score-overall.bad{color:var(--red)} .score-overall.ok{color:#f59e0b} .score-overall.good{color:var(--accent3)} .score-overall.imp{color:var(--accent)}
+.score-total{font-size:11px;color:var(--muted);font-weight:400}
+.score-dims{padding:10px 16px;display:flex;flex-direction:column;gap:6px}
+.score-dim{display:flex;align-items:center;gap:8px}
+.score-dim-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);width:62px;flex-shrink:0}
+.score-dim-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.score-dim-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.score-dim-num{font-size:11px;font-weight:700;width:16px;text-align:right;flex-shrink:0}
+.score-verdict{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:#888;font-style:italic;line-height:1.5}.score-dim-reason{font-size:10px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none}.score-card:hover .score-dim-reason{display:block}.scroll-stop-badge{border-top:1px solid var(--border);margin-top:4px;padding-top:6px}
+.hist-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .2s;letter-spacing:.3px}
+.hist-btn:hover{border-color:var(--accent);color:var(--accent)}
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden;animation:fadeUp .3s ease both}
+.hist-card-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.hist-card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hist-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.hist-score.good{color:var(--accent3)} .hist-score.ok{color:#f59e0b} .hist-score.bad{color:var(--red)}
+.hist-body{padding:18px 20px;font-size:13px;color:var(--text);line-height:1.75;white-space:pre-wrap}
+.hist-body::after{display:none}
+.hist-actions{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--border)}
+.hist-copy-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .2s}
+.hist-copy-btn:hover{border-color:var(--accent3);color:var(--accent3)}
+.hist-delete-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:13px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .2s;line-height:1}
+.hist-delete-btn:hover{border-color:var(--red);color:var(--red)}
+.hist-date{font-size:10px;color:var(--muted);margin-left:auto}
+/* Delete confirm modal */
+.del-confirm-overlay{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center}
+.del-confirm-box{background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 0 40px rgba(232,255,87,0.15);text-align:center}
+.del-confirm-box p{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:22px}
+.del-confirm-box p strong{color:var(--accent);font-family:var(--font-display)}
+.del-confirm-actions{display:flex;gap:10px;justify-content:center}
+.del-btn-cancel{font-family:var(--font-display);font-size:12px;font-weight:700;padding:9px 22px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .2s}
+.del-btn-cancel:hover{border-color:var(--text);color:var(--text)}
+.del-btn-confirm{font-family:var(--font-display);font-size:12px;font-weight:700;padding:9px 22px;border-radius:7px;border:none;background:var(--accent);color:#0c0c0c;cursor:pointer;transition:all .2s;box-shadow:0 0 14px rgba(232,255,87,0.2)}
+.del-btn-confirm:hover{opacity:.88;box-shadow:0 0 22px rgba(232,255,87,0.35)}
+
+/* ─── Section cards ─── */
+.sec-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeUp .35s ease both}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.sec-tag{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:5px}
+.st-intro{background:rgba(232,255,87,0.1);color:var(--accent);border:1px solid rgba(232,255,87,0.2)}
+.st-middle{background:rgba(255,107,107,0.1);color:var(--accent2);border:1px solid rgba(255,107,107,0.2)}
+.st-end{background:rgba(87,232,192,0.08);color:var(--accent3);border:1px solid rgba(87,232,192,0.2)}
+.nw-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(255,107,107,0.08);color:var(--red);border:1px solid rgba(255,107,107,0.2)}
+.sec-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sc-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.sc-orig{color:var(--muted)} .sc-weak{color:var(--red)} .sc-imp{color:var(--accent)} .sc-why{color:#555}
+.sc-orig p,.sc-weak p{font-size:13px;line-height:1.6}
+.sc-orig p{color:#555} .sc-weak p{color:rgba(255,107,107,.8)}
+.sc-imp p{color:var(--text);font-size:13.5px;font-weight:500;line-height:1.75;padding:11px 14px;background:rgba(232,255,87,0.04);border-left:2px solid var(--accent);border-radius:0 7px 7px 0}
+.sc-why p{color:#555;font-size:12px;font-style:italic;line-height:1.6}
+
+/* ─── Full script card ─── */
+.full-script-card{background:var(--surface);border:1px solid rgba(232,255,87,0.2);border-radius:12px;overflow:hidden;animation:fadeUp .4s ease both}
+.full-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(232,255,87,0.04);border-bottom:1px solid rgba(232,255,87,0.12)}
+.full-title{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+.btn-copy{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-body);font-size:12px;padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .15s}
+.btn-copy:hover{border-color:var(--accent);color:var(--accent)}
+.full-body{padding:18px;font-size:13.5px;line-height:1.9;color:var(--text);white-space:pre-wrap}
+
+/* ─── Regen bar ─── */
+.regen-bar{display:flex;flex-direction:column;gap:8px;padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border)}
+.regen-row{display:flex;gap:8px;align-items:center}
+.regen-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font-body);font-size:12px;padding:7px 12px;outline:none;transition:border-color .2s}
+.regen-input:focus{border-color:var(--accent2)}
+.regen-input::placeholder{color:#444}
+.btn-regen{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.5px;padding:7px 14px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn-regen:hover{border-color:var(--accent2);color:var(--accent2)}
+.btn-regen:disabled{opacity:.4;cursor:not-allowed}
+.regen-hint{font-size:10px;color:#444}
+
+/* ─── Write mode result ─── */
+.write-result{background:var(--surface);border:1px solid rgba(232,255,87,0.25);border-radius:12px;overflow:hidden;animation:fadeUp .3s ease both}
+.write-result-head{padding:14px 18px;background:rgba(232,255,87,0.06);border-bottom:1px solid rgba(232,255,87,0.15);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.write-result-title{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.write-result-meta{display:flex;gap:6px;flex-wrap:wrap}
+.write-result-body{padding:20px;font-size:14px;line-height:1.9;color:var(--text);white-space:pre-wrap}
+.write-breakdown{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:var(--surface2)}
+.breakdown-item{font-size:12px;line-height:1.6;color:#888}
+.breakdown-item strong{color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
+.write-score-row{display:flex;gap:8px;align-items:center;padding:10px 18px;border-top:1px solid var(--border);background:var(--surface2)}
+.write-score-label{font-size:11px;color:var(--muted)}
+.write-score-num{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--accent)}
+
+.error-banner{background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);border-radius:8px;padding:11px 16px;color:var(--red);font-size:13px;display:none;margin-top:4px}
+footer{border-top:1px solid var(--border);padding:16px 48px;display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px;position:relative;z-index:1}
+.s-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent3);margin-right:6px;box-shadow:0 0 5px var(--accent3)}
+
+@media(max-width:768px){
+  header,.mode-selector,.input-panel,.output-panel,footer{padding-left:20px;padding-right:20px}
+  .main{grid-template-columns:1fr}
+  .input-panel{border-right:none;border-bottom:1px solid var(--border)}
+  .score-compare{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="bg-pattern"><canvas id="bgCanvas"></canvas></div>
+
+<header>
+  <div class="logo">Script<span>Boost</span></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="hist-btn" onclick="openHistory()">⏱ History</button>
+    <button class="auth-btn-outline" onclick="alert('Sign in coming soon!')">Sign in</button>
+    <button class="auth-btn-filled" onclick="alert('Log in coming soon!')">Log in</button>
+  </div>
+</header>
+
+<!-- Mode selector -->
+<div class="mode-selector">
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('write')">✦ Write a script</button>
+    <button class="mode-tab" onclick="switchMode('improve')">⚡ Improve my script</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- ── INPUT PANEL ── -->
+  <div class="input-panel">
+
+    <!-- WRITE MODE -->
+    <div class="mode-panel active" id="writePanel">
+      <div class="field-group">
+        <div class="flabel">Platform</div>
+        <div class="platforms" id="writePlatforms">
+          <button class="plat-btn active" data-p="YouTube" onclick="selectPlatform(this,'write')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M23 7s-.3-1.9-1.1-2.7c-1.1-1.1-2.3-1.1-2.8-1.2C16.3 3 12 3 12 3s-4.3 0-7.1.1C4.3 4 3.2 4 2 5.3 1.3 6.1 1 8 1 8S.7 10 .7 12v1.9c0 1.9.3 3.9.3 3.9s.3 1.9 1.1 2.7c1.1 1.1 2.5 1 3.1 1.1C7 21.8 12 22 12 22s4.3 0 7.1-.3c.6-.1 1.8-.1 2.8-1.2.8-.8 1.1-2.7 1.1-2.7s.3-1.9.3-3.9V11c0-2-.3-4-.3-4zM9.7 15.5V8.4l7.6 3.6-7.6 3.5z"/></svg></div>
+            <span class="plat-name">YouTube</span>
+          </button>
+          <button class="plat-btn" data-p="TikTok" onclick="selectPlatform(this,'write')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 15 0h-3.8v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .6 0 .8.1V9.3a7 7 0 0 0-.8 0 6.7 6.7 0 0 0-6.7 6.7 6.7 6.7 0 0 0 6.7 6.7 6.7 6.7 0 0 0 6.7-6.7V7.8a8.7 8.7 0 0 0 5.1 1.6V5.6a4.9 4.9 0 0 1-1.5-.3z"/></svg></div>
+            <span class="plat-name">TikTok</span>
+          </button>
+          <button class="plat-btn" data-p="Instagram" onclick="selectPlatform(this,'write')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 3.3.2 4.8 1.7 5 5 .1 1.3.1 1.6.1 4.8 0 3.2 0 3.6-.1 4.8-.2 3.3-1.7 4.8-5 5-1.3.1-1.6.1-4.9.1-3.2 0-3.6 0-4.8-.1-3.3-.2-4.8-1.7-5-5C2.1 15.6 2 15.3 2 12c0-3.2 0-3.6.1-4.8.2-3.3 1.7-4.8 5-5 1.3-.1 1.6-.1 4.9-.1zM12 0C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12c0 3.3 0 3.7.1 4.9.2 4.4 2.6 6.8 7 7C8.3 24 8.7 24 12 24c3.3 0 3.7 0 4.9-.1 4.4-.2 6.8-2.6 7-7 .1-1.2.1-1.6.1-4.9 0-3.3 0-3.7-.1-4.9C23.7 2.7 21.3.3 16.9.1 15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4A6.2 6.2 0 0 0 12 5.8zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"/></svg></div>
+            <span class="plat-name">Reels</span>
+          </button>
+          <button class="plat-btn" data-p="Twitch" onclick="selectPlatform(this,'write')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11.6 6H10V11h1.6V6zm4.3 0H14V11h1.9V6zM4.8 0L1 3.8V20.3h5.3V24l3.8-3.7h3l6.5-6.5V0H4.8zm13.4 13.2l-2.4 2.4h-3.8l-2.1 2.1v-2.1H6.7V1.6h11.5v11.6z"/></svg></div>
+            <span class="plat-name">Twitch</span>
+          </button>
+          <button class="plat-btn" data-p="Shorts" onclick="selectPlatform(this,'write')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33c-.25-.46-.77-.52-1.2-.52H3.52c-.44 0-.96.07-1.2.52C2 10.9 2 11.4 2 12s0 1.1.32 1.68c.24.45.76.52 1.2.52h13.05c.43 0 .95-.07 1.2-.52C18 13.1 18 12.6 18 12s0-1.1-.23-1.68zM21.54 7c-.23-.4-.72-.46-1.1-.46H9.52c-.4 0-.88.06-1.1.46C8 7.5 8 8 8 8.5v7c0 .5 0 1 .42 1.5.22.4.7.46 1.1.46h10.92c.38 0 .87-.06 1.1-.46C22 17 22 16.5 22 16V8.5c0-.5 0-1-.46-1.5z"/></svg></div>
+            <span class="plat-name">Shorts</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="flabel">What is your video about?</div>
+        <!-- Trends bar — loads automatically, sits above the textarea -->
+        <div class="trends-bar" id="trendsBar" style="margin-bottom:8px">
+          <div class="trends-header">
+            <span class="trends-label">🔥 Trending now</span>
+            <button class="trends-refresh" id="trendsRefreshBtn" onclick="loadTrends(true)" title="Refresh trends">↺</button>
+          </div>
+          <div class="trends-chips" id="trendsChips">
+            <!-- skeleton loaders while fetching -->
+            <div class="trend-chip-skeleton" style="width:90px"></div>
+            <div class="trend-chip-skeleton" style="width:110px"></div>
+            <div class="trend-chip-skeleton" style="width:75px"></div>
+            <div class="trend-chip-skeleton" style="width:95px"></div>
+            <div class="trend-chip-skeleton" style="width:80px"></div>
+          </div>
+        </div>
+        <textarea class="ftextarea" id="writeTopicInput" style="min-height:100px" placeholder="e.g. I want to make a TikTok ad for the Keychron K2 mechanical keyboard targeting people who type a lot for work. The keyboard is $90, hot-swappable, works on Mac and Windows, and has great battery life."></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="flabel">Tone & style</div>
+        <input class="finput" id="writeMoodInput" placeholder="e.g. Honest and casual like talking to a friend, not salesy"/>
+      </div>
+
+      <div class="field-group">
+        <div class="flabel">Target audience <span class="opt">(leave blank to auto-detect)</span></div>
+        <input class="finput" id="writeAudienceInput" placeholder="e.g. Young professionals who work from home"/>
+      </div>
+
+      <div class="field-group">
+        <div class="flabel">Video length</div>
+        <select class="fselect" id="writeLengthInput">
+          <option value="short">Short (15-30 sec / ~60 words)</option>
+          <option value="medium" selected>Medium (30-60 sec / ~120 words)</option>
+          <option value="long">Long (1-3 min / ~300 words)</option>
+          <option value="full">Full video (5-10 min / ~800 words)</option>
+        </select>
+      </div>
+
+      <div class="error-banner" id="writeErrorBanner"></div>
+
+      <!-- ✦ Voice Match — subtle optional feature -->
+      <div>
+        <div class="voice-match-toggle" id="voiceMatchToggle" onclick="toggleVoiceMatch()">
+          <span class="voice-match-icon">✦</span>
+          <span class="voice-match-label">Match your style <span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;color:#555">(optional)</span></span>
+          <span class="voice-match-arrow">▼</span>
+        </div>
+        <div class="voice-match-panel" id="voiceMatchPanel">
+          <div class="voice-match-hint">Paste 1–3 scripts you've written before. ScriptBoost will learn your voice — your sentence rhythm, your slang, how you open and close — and write in <strong>your</strong> style instead of a generic one.</div>
+          <textarea class="ftextarea" id="voiceScriptsInput" style="min-height:120px;font-size:12.5px" placeholder="Paste your own scripts here... The more you give it, the better it learns your style."></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn-analyze-style" id="analyzeStyleBtn" onclick="analyzeMyStyle()">✦ Learn my style</button>
+            <div id="voiceProfileStatus" style="display:none;align-items:center;gap:8px">
+              <div class="voice-profile-badge"><span class="vp-dot"></span><span id="voiceProfileLabel">Style learned</span></div>
+              <button class="btn-clear-style" onclick="clearVoiceProfile()" title="Remove style">✕ clear</button>
+            </div>
+          </div>
+          <div id="voiceMatchError" style="display:none;font-size:11px;color:var(--red);margin-top:2px"></div>
+        </div>
+      </div>
+
+      <button class="btn-main" id="writeBtn" onclick="writeScript()">✦ Write my script</button>
+    </div>
+
+    <!-- IMPROVE MODE -->
+    <div class="mode-panel" id="improvePanel">
+      <div class="field-group">
+        <div class="flabel">Platform</div>
+        <div class="platforms" id="improvePlatforms">
+          <button class="plat-btn active" data-p="YouTube" onclick="selectPlatform(this,'improve')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M23 7s-.3-1.9-1.1-2.7c-1.1-1.1-2.3-1.1-2.8-1.2C16.3 3 12 3 12 3s-4.3 0-7.1.1C4.3 4 3.2 4 2 5.3 1.3 6.1 1 8 1 8S.7 10 .7 12v1.9c0 1.9.3 3.9.3 3.9s.3 1.9 1.1 2.7c1.1 1.1 2.5 1 3.1 1.1C7 21.8 12 22 12 22s4.3 0 7.1-.3c.6-.1 1.8-.1 2.8-1.2.8-.8 1.1-2.7 1.1-2.7s.3-1.9.3-3.9V11c0-2-.3-4-.3-4zM9.7 15.5V8.4l7.6 3.6-7.6 3.5z"/></svg></div>
+            <span class="plat-name">YouTube</span>
+          </button>
+          <button class="plat-btn" data-p="TikTok" onclick="selectPlatform(this,'improve')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 15 0h-3.8v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .6 0 .8.1V9.3a7 7 0 0 0-.8 0 6.7 6.7 0 0 0-6.7 6.7 6.7 6.7 0 0 0 6.7 6.7 6.7 6.7 0 0 0 6.7-6.7V7.8a8.7 8.7 0 0 0 5.1 1.6V5.6a4.9 4.9 0 0 1-1.5-.3z"/></svg></div>
+            <span class="plat-name">TikTok</span>
+          </button>
+          <button class="plat-btn" data-p="Instagram" onclick="selectPlatform(this,'improve')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 3.3.2 4.8 1.7 5 5 .1 1.3.1 1.6.1 4.8 0 3.2 0 3.6-.1 4.8-.2 3.3-1.7 4.8-5 5-1.3.1-1.6.1-4.9.1-3.2 0-3.6 0-4.8-.1-3.3-.2-4.8-1.7-5-5C2.1 15.6 2 15.3 2 12c0-3.2 0-3.6.1-4.8.2-3.3 1.7-4.8 5-5 1.3-.1 1.6-.1 4.9-.1zM12 0C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12c0 3.3 0 3.7.1 4.9.2 4.4 2.6 6.8 7 7C8.3 24 8.7 24 12 24c3.3 0 3.7 0 4.9-.1 4.4-.2 6.8-2.6 7-7 .1-1.2.1-1.6.1-4.9 0-3.3 0-3.7-.1-4.9C23.7 2.7 21.3.3 16.9.1 15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4A6.2 6.2 0 0 0 12 5.8zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"/></svg></div>
+            <span class="plat-name">Reels</span>
+          </button>
+          <button class="plat-btn" data-p="Twitch" onclick="selectPlatform(this,'improve')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11.6 6H10V11h1.6V6zm4.3 0H14V11h1.9V6zM4.8 0L1 3.8V20.3h5.3V24l3.8-3.7h3l6.5-6.5V0H4.8zm13.4 13.2l-2.4 2.4h-3.8l-2.1 2.1v-2.1H6.7V1.6h11.5v11.6z"/></svg></div>
+            <span class="plat-name">Twitch</span>
+          </button>
+          <button class="plat-btn" data-p="Shorts" onclick="selectPlatform(this,'improve')">
+            <div class="plat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33c-.25-.46-.77-.52-1.2-.52H3.52c-.44 0-.96.07-1.2.52C2 10.9 2 11.4 2 12s0 1.1.32 1.68c.24.45.76.52 1.2.52h13.05c.43 0 .95-.07 1.2-.52C18 13.1 18 12.6 18 12s0-1.1-.23-1.68zM21.54 7c-.23-.4-.72-.46-1.1-.46H9.52c-.4 0-.88.06-1.1.46C8 7.5 8 8 8 8.5v7c0 .5 0 1 .42 1.5.22.4.7.46 1.1.46h10.92c.38 0 .87-.06 1.1-.46C22 17 22 16.5 22 16V8.5c0-.5 0-1-.46-1.5z"/></svg></div>
+            <span class="plat-name">Shorts</span>
+          </button>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="flabel">Video topic <span class="opt">(helps AI research)</span></div>
+        <input class="finput" id="improveTopicInput" placeholder="e.g. Keychron K2 mechanical keyboard review"/>
+      </div>
+      <div class="field-group">
+        <div class="flabel">Tone & style</div>
+        <input class="finput" id="improveMoodInput" placeholder="e.g. Chill and honest, not too hype"/>
+      </div>
+      <div class="field-group">
+        <div class="flabel">Target audience <span class="opt">(leave blank to auto-detect)</span></div>
+        <input class="finput" id="improveAudienceInput" placeholder="e.g. Young adults who work from home"/>
+      </div>
+      <div class="field-group">
+        <div class="flabel">Insert tag at cursor</div>
+        <div class="tags-main-row">
+          <button class="tag-chip" onclick="insertTag('[TALKING]')">[TALKING]</button>
+          <button class="tag-chip" onclick="insertTag('[SINGING]')">[SINGING]</button>
+          <button class="tag-chip" onclick="insertTag('[HOOK]')">[HOOK]</button>
+          <button class="tag-chip" onclick="insertTag('[CTA]')">[CTA]</button>
+          <button class="btn-more-tags" id="moreTagsBtn" onclick="toggleDrawer()">+ More</button>
+        </div>
+        <div class="tag-drawer" id="tagDrawer">
+          <input class="tag-search-input" id="tagSearchInput" placeholder="Search tags..." oninput="filterTags(this.value)"/>
+          <div id="allTagCategories">
+            <div class="tag-cat-label">Structure</div>
+            <div class="tag-cat-row"><button class="drawer-chip" onclick="insertTag('[INTRO]')">[INTRO]</button><button class="drawer-chip" onclick="insertTag('[OUTRO]')">[OUTRO]</button><button class="drawer-chip" onclick="insertTag('[TRANSITION]')">[TRANSITION]</button><button class="drawer-chip" onclick="insertTag('[RECAP]')">[RECAP]</button></div>
+            <div class="tag-cat-label" style="margin-top:8px">Content</div>
+            <div class="tag-cat-row"><button class="drawer-chip" onclick="insertTag('[GAMEPLAY]')">[GAMEPLAY]</button><button class="drawer-chip" onclick="insertTag('[TUTORIAL]')">[TUTORIAL]</button><button class="drawer-chip" onclick="insertTag('[REACTION]')">[REACTION]</button><button class="drawer-chip" onclick="insertTag('[STORY]')">[STORY]</button><button class="drawer-chip" onclick="insertTag('[TIP]')">[TIP]</button><button class="drawer-chip" onclick="insertTag('[RANT]')">[RANT]</button></div>
+            <div class="tag-cat-label" style="margin-top:8px">Energy</div>
+            <div class="tag-cat-row"><button class="drawer-chip" onclick="insertTag('[HYPE]')">[HYPE]</button><button class="drawer-chip" onclick="insertTag('[CALM]')">[CALM]</button><button class="drawer-chip" onclick="insertTag('[FUNNY]')">[FUNNY]</button><button class="drawer-chip" onclick="insertTag('[EMOTIONAL]')">[EMOTIONAL]</button><button class="drawer-chip" onclick="insertTag('[DRAMATIC]')">[DRAMATIC]</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="flabel">Your script</div>
+        <textarea class="ftextarea" id="scriptInput" style="min-height:200px" placeholder="[HOOK] Start with something that stops the scroll...&#10;[TALKING] Your main content here...&#10;[CTA] Like and subscribe!"></textarea>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-item"><strong id="wordCount">0</strong> words</div>
+        <div class="stat-item"><strong id="tagCount">0</strong> tags</div>
+        <div class="stat-item" id="platStat"><strong>YouTube</strong> format</div>
+      </div>
+      <div class="error-banner" id="improveErrorBanner"></div>
+      <button class="btn-main" id="improveBtn" onclick="analyzeScript()">⚡ Analyze &amp; Rewrite</button>
+    </div>
+
+  </div>
+
+  <!-- ── OUTPUT PANEL ── -->
+  <div class="output-panel" id="outputPanel">
+    <div class="empty-state">
+      <div style="font-size:32px;opacity:.15">✦</div>
+      <p id="emptyMsg">Choose "Write a script" to create one from scratch, or "Improve my script" to make yours better.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span><span class="s-dot"></span>Gemini 2.5 Flash · ScriptBoost v4</span>
+  <span>Free while in beta</span>
+</footer>
+
+<script>
+const BACKEND_URL = 'https://web-production-8a655.up.railway.app';
+let selectedWritePlatform = 'YouTube';
+let selectedImprovePlatform = 'YouTube';
+let currentMode = 'write';
+let drawerOpen = false;
+let lastResult = null;
+let voiceProfile = null; // stores the extracted style profile
+let activeTrend  = null; // stores the currently selected trend chip
+
+// ─── Trends ────────────────────────────────────────────────────
+const TRENDS_CACHE_KEY = 'scriptboost_trends_v1';
+const TRENDS_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
+
+async function loadTrends(forceRefresh = false) {
+  const chipsEl   = document.getElementById('trendsChips');
+  const refreshBtn = document.getElementById('trendsRefreshBtn');
+  if (!chipsEl) return;
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(TRENDS_CACHE_KEY) || 'null');
+      if (cached && cached.trends && (Date.now() - cached.ts) < TRENDS_CACHE_TTL) {
+        renderTrendChips(cached.trends);
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Show spinning refresh icon
+  if (refreshBtn) refreshBtn.classList.add('spinning');
+
+  // Show skeleton while loading
+  chipsEl.innerHTML = [90,110,75,95,80].map(w =>
+    `<div class="trend-chip-skeleton" style="width:${w}px"></div>`
+  ).join('');
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/trends`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const trends = data.trends || [];
+    if (trends.length > 0) {
+      // Cache it
+      localStorage.setItem(TRENDS_CACHE_KEY, JSON.stringify({ trends, ts: Date.now() }));
+      renderTrendChips(trends);
+    } else {
+      chipsEl.innerHTML = '<span style="font-size:11px;color:#444">No trends available right now</span>';
+    }
+  } catch(e) {
+    chipsEl.innerHTML = '<span style="font-size:11px;color:#444">Couldn\'t load trends</span>';
+  } finally {
+    if (refreshBtn) refreshBtn.classList.remove('spinning');
+  }
+}
+
+function renderTrendChips(trends) {
+  const chipsEl = document.getElementById('trendsChips');
+  if (!chipsEl) return;
+  chipsEl.innerHTML = trends.map((t, i) =>
+    `<button class="trend-chip" id="trend-chip-${i}" onclick="selectTrend(${i}, '${esc(t.topic)}', '${esc(t.angle)}')">`
+    + `🔥 ${esc(t.topic)}</button>`
+  ).join('');
+}
+
+function selectTrend(idx, topic, angle) {
+  // Toggle — click again to deselect
+  const wasActive = activeTrend && activeTrend.idx === idx;
+
+  // Clear all active states
+  document.querySelectorAll('.trend-chip').forEach(c => c.classList.remove('active'));
+  activeTrend = null;
+
+  if (!wasActive) {
+    // Select this chip
+    const chip = document.getElementById(`trend-chip-${idx}`);
+    if (chip) chip.classList.add('active');
+    activeTrend = { idx, topic, angle };
+
+    // Fill the topic input with the trend angle as a starting point
+    const topicInput = document.getElementById('writeTopicInput');
+    if (topicInput && !topicInput.value.trim()) {
+      // Only auto-fill if empty — don't overwrite what they've written
+      topicInput.value = angle;
+      topicInput.focus();
+    }
+  }
+}
+
+// Load trends when page loads
+document.addEventListener('DOMContentLoaded', () => { loadTrends(); });
+
+// ─── Voice Match ───────────────────────────────────────────────
+const VOICE_PROFILE_KEY = 'scriptboost_voice_profile_v1';
+
+// Load saved voice profile on page load
+(function loadSavedVoiceProfile(){
+  try {
+    const saved = localStorage.getItem(VOICE_PROFILE_KEY);
+    if (saved) {
+      voiceProfile = JSON.parse(saved);
+      showVoiceProfileBadge(voiceProfile.summary || 'Style loaded');
+    }
+  } catch(e) {}
+})();
+
+function toggleVoiceMatch() {
+  const toggle = document.getElementById('voiceMatchToggle');
+  const panel  = document.getElementById('voiceMatchPanel');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('active', !isOpen);
+}
+
+async function analyzeMyStyle() {
+  const scripts = document.getElementById('voiceScriptsInput').value.trim();
+  const errEl   = document.getElementById('voiceMatchError');
+  errEl.style.display = 'none';
+
+  if (!scripts || scripts.split(/\s+/).length < 20) {
+    errEl.textContent = 'Paste at least one full script (20+ words) so ScriptBoost can learn your voice.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('analyzeStyleBtn');
+  btn.disabled = true;
+  btn.textContent = '✦ Learning...';
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/analyze-style`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scripts }),
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      throw new Error(e.error || 'Failed');
+    }
+    const data = await res.json();
+    voiceProfile = data;
+
+    if (data.low_confidence) {
+      // Profile extracted but too vague — warn the user
+      errEl.innerHTML = '⚠ We couldn\'t learn much from that — the scripts might be too short or too similar to generic AI writing. Try pasting a longer or more personal script.';
+      errEl.style.display = 'block';
+      errEl.style.color = '#f59e0b'; // amber warning, not red error
+      voiceProfile = null; // don't apply a bad profile
+      localStorage.removeItem(VOICE_PROFILE_KEY);
+    } else {
+      // Save to localStorage so it persists across sessions
+      localStorage.setItem(VOICE_PROFILE_KEY, JSON.stringify(voiceProfile));
+      showVoiceProfileBadge(voiceProfile.summary || 'Style learned');
+    }
+  } catch(e) {
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✦ Learn my style';
+  }
+}
+
+function showVoiceProfileBadge(label) {
+  const status = document.getElementById('voiceProfileStatus');
+  const labelEl = document.getElementById('voiceProfileLabel');
+  if (status) { status.style.display = 'flex'; }
+  if (labelEl) { labelEl.textContent = label; }
+  // Mark toggle as active
+  const toggle = document.getElementById('voiceMatchToggle');
+  if (toggle) toggle.classList.add('active');
+}
+
+function clearVoiceProfile() {
+  voiceProfile = null;
+  localStorage.removeItem(VOICE_PROFILE_KEY);
+  const status = document.getElementById('voiceProfileStatus');
+  if (status) status.style.display = 'none';
+  const input = document.getElementById('voiceScriptsInput');
+  if (input) input.value = '';
+  const toggle = document.getElementById('voiceMatchToggle');
+  if (toggle) toggle.classList.remove('active');
+}
+
+// ─── Background canvas ────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; draw(); }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.globalAlpha=0.04; ctx.fillStyle='#ffffff'; ctx.strokeStyle='#ffffff';
+    const size=130, cols=Math.ceil(canvas.width/size)+1, rows=Math.ceil(canvas.height/size)+1;
+    const icons=['yt','tt','ig','tw','sh'];
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const x=c*size+(r%2)*65, y=r*size;
+      ctx.save(); ctx.translate(x+size/2,y+size/2);
+      drawIcon(ctx,icons[(r*cols+c)%icons.length],22); ctx.restore();
+    }
+  }
+  function drawIcon(ctx,type,s){
+    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round';
+    if(type==='yt'){roundRect(ctx,-s,-s*.65,s*2,s*1.3,s*.25,false,true);ctx.beginPath();ctx.moveTo(-s*.3,-s*.4);ctx.lineTo(-s*.3,s*.4);ctx.lineTo(s*.55,0);ctx.closePath();ctx.fill();}
+    else if(type==='tt'){ctx.beginPath();ctx.arc(s*.1,s*.3,s*.35,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(s*.1,-s*.05);ctx.lineTo(s*.1,-s*.9);ctx.lineTo(s*.75,-s*.9);ctx.lineTo(s*.75,-s*.45);ctx.stroke();}
+    else if(type==='ig'){roundRect(ctx,-s*.75,-s*.75,s*1.5,s*1.5,s*.3,false,true);ctx.beginPath();ctx.arc(0,0,s*.38,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(s*.5,-s*.5,s*.12,0,Math.PI*2);ctx.fill();}
+    else if(type==='tw'){roundRect(ctx,-s*.7,-s*.75,s*1.4,s*1.1,s*.15,false,true);ctx.beginPath();ctx.moveTo(-s*.7,s*.35);ctx.lineTo(-s*.3,s*.75);ctx.lineTo(s*.3,s*.75);ctx.lineTo(s*.7,s*.35);ctx.stroke();ctx.beginPath();ctx.arc(-s*.25,-s*.15,s*.12,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s*.25,-s*.15,s*.12,0,Math.PI*2);ctx.fill();}
+    else{roundRect(ctx,-s*.45,-s*.8,s*.9,s*1.6,s*.18,false,true);ctx.beginPath();ctx.moveTo(s*.1,-s*.35);ctx.lineTo(-s*.15,s*.05);ctx.lineTo(s*.05,s*.05);ctx.lineTo(-s*.1,s*.45);ctx.lineTo(s*.2,0);ctx.lineTo(0,0);ctx.closePath();ctx.fill();}
+  }
+  function roundRect(ctx,x,y,w,h,r,fill,stroke){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+    if(fill)ctx.fill();if(stroke)ctx.stroke();
+  }
+  window.addEventListener('resize',resize); resize();
+})();
+
+// ─── Mode switching ───────────────────────────────────────────
+function switchMode(mode){
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t,i)=>t.classList.toggle('active', (i===0&&mode==='write')||(i===1&&mode==='improve')));
+  document.getElementById('writePanel').classList.toggle('active', mode==='write');
+  document.getElementById('improvePanel').classList.toggle('active', mode==='improve');
+  document.getElementById('outputPanel').innerHTML = '<div class="empty-state"><div style="font-size:32px;opacity:.15">✦</div><p>' +
+    (mode==='write' ? 'Fill in your video details and hit Write — the AI will research what\'s trending and write a script from scratch.' : 'Paste your script, fill in the details, and hit Analyze — the AI will score it and rewrite every section.') +
+    '</p></div>';
+}
+
+// ─── Platform selection ───────────────────────────────────────
+function selectPlatform(btn, mode){
+  const container = mode==='write' ? 'writePlatforms' : 'improvePlatforms';
+  document.querySelectorAll('#'+container+' .plat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(mode==='write') selectedWritePlatform = btn.dataset.p;
+  else { selectedImprovePlatform = btn.dataset.p; document.getElementById('platStat').innerHTML = '<strong>'+btn.dataset.p+'</strong> format'; }
+}
+
+// ─── Tags ─────────────────────────────────────────────────────
+function toggleDrawer(){
+  drawerOpen=!drawerOpen;
+  document.getElementById('tagDrawer').classList.toggle('open',drawerOpen);
+  document.getElementById('moreTagsBtn').textContent=drawerOpen?'− Less':'+ More';
+  if(drawerOpen) setTimeout(()=>document.getElementById('tagSearchInput').focus(),100);
+}
+function filterTags(q){
+  q=q.toLowerCase();
+  document.querySelectorAll('.drawer-chip').forEach(c=>c.style.display=c.textContent.toLowerCase().includes(q)?'':'none');
+  document.querySelectorAll('#allTagCategories .tag-cat-label').forEach(l=>{
+    const row=l.nextElementSibling;
+    const any=row&&[...row.querySelectorAll('.drawer-chip')].some(c=>c.style.display!=='none');
+    l.style.display=any?'':'none'; if(row)row.style.display=any?'':'none';
+  });
+}
+function insertTag(tag){
+  const ta=document.getElementById('scriptInput');
+  const s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;
+  const nl=v.substring(0,s).length>0&&!v.substring(0,s).endsWith('\n')?'\n':'';
+  ta.value=v.substring(0,s)+nl+tag+' '+v.substring(e);
+  ta.selectionStart=ta.selectionEnd=s+nl.length+tag.length+1;
+  ta.focus(); updateStats();
+}
+function updateStats(){
+  const v=document.getElementById('scriptInput').value;
+  document.getElementById('wordCount').textContent=v.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('tagCount').textContent=(v.match(/\[[A-Z]+\]/g)||[]).length;
+}
+document.getElementById('scriptInput').addEventListener('input',updateStats);
+
+// ─── Loading ──────────────────────────────────────────────────
+function showLoading(){
+  document.getElementById('outputPanel').innerHTML=`
+    <div class="loading-screen">
+      <div class="pct-number" id="pctNum">0%</div>
+      <div class="pct-bar-track"><div class="pct-bar-fill" id="pctBar"></div></div>
+      <div class="pct-step" id="pctLabel">Starting...</div>
+      <div class="pct-note" id="pctNote">This takes 2–4 minutes with improvement passes.</div>
+    </div>`;
+}
+function updateProgress(pct,label){
+  const n=document.getElementById('pctNum'),b=document.getElementById('pctBar'),l=document.getElementById('pctLabel'),note=document.getElementById('pctNote');
+  if(n)n.textContent=pct+'%'; if(b)b.style.width=pct+'%'; if(l)l.textContent=label;
+  // Show rate limit note when passes are running
+  if(note && label && label.includes('Pass')){
+    note.textContent='Running improvement passes — almost done...';
+    note.style.color='#f59e0b';
+  } else if(note && label && label.toLowerCase().includes('wait')){
+    note.textContent='⏳ AI is busy — retrying automatically...';
+    note.style.color='#f59e0b';
+  }
+}
+
+// ─── SSE reader ───────────────────────────────────────────────
+async function readSSE(res, onMsg){
+  const reader=res.body.getReader(), dec=new TextDecoder();
+  let buf='';
+  while(true){
+    const{done,value}=await reader.read(); if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    const lines=buf.split('\n'); buf=lines.pop();
+    for(const line of lines){
+      if(!line.startsWith('data: '))continue;
+      try{ onMsg(JSON.parse(line.slice(6))); }catch(e){}
+    }
+  }
+}
+
+// ─── Energy tag colors ────────────────────────────────────────
+const ENERGY_COLORS = {
+  'energetic': {bg:'rgba(232,255,87,0.12)', color:'var(--accent)',     border:'rgba(232,255,87,0.3)'},
+  'calm':      {bg:'rgba(87,232,192,0.08)', color:'var(--accent3)',    border:'rgba(87,232,192,0.25)'},
+  'surprised': {bg:'rgba(255,180,50,0.1)',  color:'#f59e0b',           border:'rgba(255,180,50,0.3)'},
+  'serious':   {bg:'rgba(255,107,107,0.08)',color:'var(--accent2)',    border:'rgba(255,107,107,0.25)'},
+  'excited':   {bg:'rgba(167,139,250,0.12)',color:'#a78bfa',           border:'rgba(167,139,250,0.3)'},
+  'hook':      {bg:'rgba(232,255,87,0.15)', color:'var(--accent)',     border:'rgba(232,255,87,0.4)'},
+  // Direction tags for emotional content
+  'pause':     {bg:'rgba(255,255,255,0.04)',color:'#666',              border:'rgba(255,255,255,0.1)'},
+  'quiet':     {bg:'rgba(87,232,192,0.05)', color:'#4a9e8a',           border:'rgba(87,232,192,0.15)'},
+  'direct':    {bg:'rgba(232,255,87,0.08)', color:'#9aaa2a',           border:'rgba(232,255,87,0.2)'},
+  'trail off': {bg:'rgba(255,255,255,0.03)',color:'#555',              border:'rgba(255,255,255,0.08)'},
+};
+
+function formatScript(raw){
+  const lines = raw.split('\n');
+  let html = '';
+  for(let i=0; i<lines.length; i++){
+    let line = lines[i];
+    if(!line.trim()){ html += '<div style="height:8px"></div>'; continue; }
+
+    const tagMatch = line.match(/^\[(energetic|calm|surprised|serious|excited|hook|pause|quiet|direct|trail off)\]\s*/i);
+    if(tagMatch){
+      const tag = tagMatch[1].toLowerCase();
+      const rest = line.slice(tagMatch[0].length);
+      const c = ENERGY_COLORS[tag] || ENERGY_COLORS['energetic'];
+      const isDirection = ['pause','quiet','direct','trail off'].includes(tag);
+      html += '<div style="display:flex;align-items:flex-start;gap:10px;margin:6px 0">'
+            + '<span style="background:'+c.bg+';color:'+c.color+';border:1px solid '+c.border
+            + ';border-radius:4px;font-family:var(--font-display);font-size:9px;font-weight:700'
+            + ';letter-spacing:1px;text-transform:uppercase;padding:2px 7px;white-space:nowrap'
+            + ';margin-top:3px;opacity:'+(isDirection?'0.6':'1')+'">'
+            + esc(tag)+'</span>'
+            + '<span style="line-height:1.85;font-size:'+(isDirection?'13.5':'13.5')+'px;'
+            + (isDirection?'color:#aaa;font-style:italic':'color:var(--text)')+'">'+esc(rest)+'</span>'
+            + '</div>';
+    } else {
+      html += '<div style="margin:6px 0;line-height:1.85;font-size:13.5px">'+esc(line)+'</div>';
+    }
+  }
+  return html;
+}
+
+// ─── WRITE SCRIPT ─────────────────────────────────────────────
+async function writeScript(){
+  const topic   = document.getElementById('writeTopicInput').value.trim();
+  const mood    = document.getElementById('writeMoodInput').value.trim();
+  const audience= document.getElementById('writeAudienceInput').value.trim();
+  const length  = document.getElementById('writeLengthInput').value;
+  if(!topic){ showErr('write','Please describe your video first.'); return; }
+
+  // Brief length warning — better brief = better script
+  const wordCount = topic.split(/\s+/).filter(Boolean).length;
+  if(wordCount < 15){
+    showErr('write','⚡ Tip: Your brief is short. Add more detail — product name, key features, who it\'s for, what makes it special. The AI writes much better scripts with more to work with.');
+    // Don't block — just warn, let them proceed
+  } else {
+    hideErr('write');
+  }
+
+  showLoading();
+  setBtn('writeBtn', true, 'Writing...');
+  const writeTimeout = setTimeout(()=>{
+    showErr('write','⏳ Taking longer than expected. Please restart python backend.py and try again.');
+    setBtn('writeBtn',false,'✦ Write my script');
+  }, 300000); // 5 minute timeout
+
+  try{
+    const res = await fetch(`${BACKEND_URL}/write`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic, mood, audience, length, platform: selectedWritePlatform, voice_profile: voiceProfile, trending_topic: activeTrend }),
+    });
+    if(!res.ok){ clearTimeout(writeTimeout); const e=await res.json(); showErr('write',e.error||'Failed.'); return; }
+    await readSSE(res, msg=>{
+      if(msg.pct!==undefined) updateProgress(msg.pct,msg.label);
+      else if(msg.result){ clearTimeout(writeTimeout); renderWriteResult(msg.result); }
+      else if(msg.error){ clearTimeout(writeTimeout); showErr('write',msg.error); }
+    });
+  }catch(err){ clearTimeout(writeTimeout); showErr('write','Cannot reach backend. Is python backend.py running?'); }
+  finally{ clearTimeout(writeTimeout); setBtn('writeBtn',false,'✦ Write my script'); }
+}
+
+function renderWriteResult(data){
+  const{script, score, topic, audience, platform, hook_used, hook_text, all_hooks, research_notes, word_count, content_type} = data;
+  const sc = score||{};
+
+  // Score bars
+  const dims = ['hook','energy','clarity','retention','cta'];
+  const dimsHtml = dims.map(d=>{
+    const s=sc.dimensions?.[d]?.score||5;
+    const r=sc.dimensions?.[d]?.reason||'';
+    const pct=(s/10)*100;
+    const col=s>=8?'var(--accent3)':s>=6?'#f59e0b':'var(--red)';
+    return '<div class="score-dim" title="'+esc(r)+'">'
+      +'<span class="score-dim-label">'+d+'</span>'
+      +'<div class="score-dim-bar"><div class="score-dim-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<span class="score-dim-num" style="color:'+col+'">'+s+'</span>'
+      +'</div>';
+  }).join('');
+
+  // Hook alternatives panel
+  let hooksHtml = '';
+  if(all_hooks && all_hooks.length > 1){
+    hooksHtml = '<div class="write-breakdown">'
+      +'<div class="breakdown-item"><strong>Hook options considered</strong>'
+      + all_hooks.map((h,i)=>'<div style="margin:5px 0;padding:8px 12px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">'
+          +'<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px">Option '+(i+1)+' — '+esc(h.pattern||'')+'</span>'
+          +'<span style="font-size:13px;color:var(--text)">'+esc(h.text||'')+'</span>'
+          +'</div>'
+        ).join('')
+      +'</div></div>';
+  }
+
+  // Build copy text without energy tags
+  const copyText_plain = (script||'').replace(/\[(energetic|calm|surprised|serious|excited|hook|pause|quiet|direct|trail off)\]\s*/gi,'').trim();
+
+  document.getElementById('outputPanel').innerHTML =
+    '<div class="write-result">'
+      +'<div class="write-result-head">'
+        +'<span class="write-result-title">✦ Your script</span>'
+        +'<div class="write-result-meta">'
+          +'<span class="tag-pill pill-topic">'+esc(topic||'')+'</span>'
+          +(audience?'<span class="tag-pill pill-audience">'+esc(audience.age_group||'')+'</span>':'')+
+          '<span class="tag-pill pill-platform">'+esc(platform||selectedWritePlatform)+'</span>'
+          +(content_type?'<span class="tag-pill" style="background:rgba(87,232,192,0.08);color:var(--accent3);border:1px solid rgba(87,232,192,0.2)">'+esc(content_type)+'</span>':'')+
+        '</div>'
+        +'<button class="btn-copy" id="write-copy-btn">⎘ Copy</button>'
+      +'</div>'
+      // Script body with energy tag formatting
+      +'<div style="padding:20px 20px;font-size:13.5px;color:var(--text)">'+formatScript(script||'')+'</div>'
+      // Score
+      +'<div class="write-score-row">'
+        +'<span class="write-score-label">Script quality score</span>'
+        +'<span class="write-score-num" style="color:'+(sc.overall>=8?'var(--accent3)':sc.overall>=6?'#f59e0b':'var(--red)')+'">'+((sc.overall)||'—')+'/10</span>'
+      +'</div>'
+      +'<div class="score-dims" style="padding:10px 18px 14px">'+dimsHtml+'</div>'
+      +(sc.verdict?'<div class="score-verdict" style="padding:0 18px 14px">'+esc(sc.verdict)+'</div>':'')+
+      // Hook used
+      (hook_used?'<div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Hook pattern used</span><span style="font-size:12px;color:var(--accent)">'+esc(hook_used)+'</span></div>':'')+
+      // Hook alternatives
+      hooksHtml +
+      // Research notes
+      (research_notes?'<div class="write-breakdown"><div class="breakdown-item"><strong>Research used</strong>'+esc(research_notes)+'</div></div>':'')+
+      // Tag legend — direction tags for emotional, energy tags for everything else
+      '<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+        +'<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-right:4px">'
+        +(content_type&&content_type.toLowerCase().includes('emotional') ? 'Direction tags:' : 'Energy tags:')+'</span>'
+        +(content_type&&content_type.toLowerCase().includes('emotional')
+          ? ['pause','quiet','direct','trail off'].map(k=>{const c=ENERGY_COLORS[k];return '<span style="background:'+c.bg+';color:'+c.color+';border:1px solid '+c.border+';border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;opacity:0.7">'+k+'</span>';}).join('')
+          : Object.entries(ENERGY_COLORS).filter(([k])=>!['hook','pause','quiet','direct','trail off'].includes(k)).map(([k,c])=>'<span style="background:'+c.bg+';color:'+c.color+';border:1px solid '+c.border+';border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px">'+k+'</span>').join('')
+        )
+      +'</div>'
+      // Rewrite bar
+      +'<div class="regen-bar">'
+        +'<div class="regen-row"><input class="regen-input" id="feedback-write-full" placeholder="What to change? e.g. shorter, stronger hook, more casual, different angle..."/>'
+        +'<button class="btn-regen" id="regen-btn-write-full" onclick="regenWriteScript()">↺ Rewrite</button></div>'
+        +'<div class="regen-hint">Leave blank to regenerate with a completely different approach</div>'
+      +'</div>'
+      // ── Did this work? ──────────────────────────────────────────
+      +'<div class="did-it-work-bar">'
+        +'<div>'
+          +'<button class="btn-did-work" id="didWorkBtn" onclick="openPerfForm()">👍 Did this work?</button>'
+        +'</div>'
+        +'<span class="did-work-hint">Posted it? Tell us how it performed<br>so ScriptBoost can write better scripts.</span>'
+      +'</div>'
+      // Performance form — hidden until button clicked
+      +'<div class="perf-form" id="perfForm">'
+        +'<div class="perf-form-title">How did it perform?</div>'
+        +'<div class="perf-views-row">'
+          +'<input class="perf-views-input" id="perfViewsInput" type="number" min="0" placeholder="Views" />'
+          +'<span class="perf-views-label">views after 48 hours</span>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:-4px">Did it outperform your usual?</div>'
+        +'<div class="perf-toggle-row">'
+          +'<button class="perf-toggle-btn" id="perfYesBtn" onclick="selectPerf(true)">👍 Yes, it did better</button>'
+          +'<button class="perf-toggle-btn" id="perfNoBtn"  onclick="selectPerf(false)">👎 About the same or worse</button>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+          +'<button class="btn-submit-perf" id="perfSubmitBtn" onclick="submitPerformance()">Submit</button>'
+          +'<div class="perf-success" id="perfSuccess">✓ Thanks! This helps ScriptBoost learn what actually works.</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+
+  lastResult = data;
+  // Save to history
+  saveToHistory(script, sc, platform || selectedWritePlatform, topic, content_type);
+  // Wire up copy button safely — avoids backtick injection issues
+  const copyBtn = document.getElementById('write-copy-btn');
+  if(copyBtn) copyBtn.onclick = () => copyText(copyBtn, copyText_plain);
+}
+
+// ─── Performance tracking ─────────────────────────────────────
+let perfOutperformed = null; // true/false/null
+
+function openPerfForm() {
+  const form = document.getElementById('perfForm');
+  const btn  = document.getElementById('didWorkBtn');
+  if (!form) return;
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    btn.textContent = '✕ Cancel';
+    btn.style.background = 'none';
+    btn.style.color = 'var(--muted)';
+    btn.style.border = '1px solid var(--border)';
+    btn.style.boxShadow = 'none';
+    document.getElementById('perfViewsInput')?.focus();
+  } else {
+    btn.innerHTML = '👍 Did this work?';
+    btn.style = '';
+  }
+}
+
+function selectPerf(outperformed) {
+  perfOutperformed = outperformed;
+  const yes = document.getElementById('perfYesBtn');
+  const no  = document.getElementById('perfNoBtn');
+  if (yes) { yes.className = 'perf-toggle-btn' + (outperformed ? ' selected-yes' : ''); }
+  if (no)  { no.className  = 'perf-toggle-btn' + (!outperformed ? ' selected-no' : ''); }
+}
+
+async function submitPerformance() {
+  if (!lastResult) return;
+  const viewsEl = document.getElementById('perfViewsInput');
+  const views   = parseInt(viewsEl?.value || '0', 10);
+  const submitBtn = document.getElementById('perfSubmitBtn');
+  const successEl = document.getElementById('perfSuccess');
+
+  if (isNaN(views) || views < 0) {
+    viewsEl.style.borderColor = 'var(--red)';
+    setTimeout(() => { viewsEl.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  try {
+    const payload = {
+      script:        lastResult.script || '',
+      platform:      lastResult.platform || selectedWritePlatform,
+      content_type:  lastResult.content_type || '',
+      hook_pattern:  lastResult.hook_used || '',
+      audience_age:  lastResult.audience?.age_group || '',
+      score:         lastResult.score?.overall || 0,
+      views_48h:     views,
+      outperformed:  perfOutperformed,
+    };
+    const res = await fetch(`${BACKEND_URL}/track-performance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed');
+
+    // Show success
+    submitBtn.style.display = 'none';
+    if (successEl) { successEl.style.display = 'flex'; }
+
+    // Reset after 3s
+    setTimeout(() => {
+      openPerfForm(); // close the form
+      submitBtn.style.display = '';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+      if (successEl) successEl.style.display = 'none';
+      perfOutperformed = null;
+      if (viewsEl) viewsEl.value = '';
+      selectPerf(null);
+    }, 3000);
+
+  } catch(e) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+    submitBtn.style.background = 'var(--red)';
+    submitBtn.textContent = 'Failed — try again';
+    setTimeout(() => {
+      submitBtn.style.background = '';
+      submitBtn.textContent = 'Submit';
+    }, 2000);
+  }
+}
+
+async function regenWriteScript(){
+  if(!lastResult) return;
+  const feedback = document.getElementById('feedback-write-full')?.value.trim()||'';
+  const btn = document.getElementById('regen-btn-write-full');
+  btn.disabled=true; btn.textContent='↺ Rewriting...';
+  showLoading();
+  try{
+    const res = await fetch(`${BACKEND_URL}/write`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic: lastResult.original_prompt || document.getElementById('writeTopicInput').value.trim(),
+        mood: document.getElementById('writeMoodInput').value.trim(),
+        audience: document.getElementById('writeAudienceInput').value.trim(),
+        length: document.getElementById('writeLengthInput').value,
+        platform: selectedWritePlatform,
+        feedback,
+      }),
+    });
+    await readSSE(res, msg=>{
+      if(msg.pct!==undefined) updateProgress(msg.pct,msg.label);
+      else if(msg.result) renderWriteResult(msg.result);
+      else if(msg.error) showErr('write',msg.error);
+    });
+  }catch(e){ showErr('write','Failed to regenerate.'); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='↺ Rewrite';} }
+}
+
+// ─── ANALYZE / IMPROVE ───────────────────────────────────────
+async function analyzeScript(){
+  const script   = document.getElementById('scriptInput').value.trim();
+  const topic    = document.getElementById('improveTopicInput').value.trim();
+  const mood     = document.getElementById('improveMoodInput').value.trim();
+  const audience = document.getElementById('improveAudienceInput').value.trim();
+  if(!script){ showErr('improve','Please paste your script first.'); return; }
+
+  hideErr('improve'); showLoading();
+  setBtn('improveBtn',true,'Analyzing...');
+  const analyzeTimeout = setTimeout(()=>{
+    showErr('improve','⏳ Taking longer than expected. Please restart python backend.py and try again.');
+    setBtn('improveBtn',false,'⚡ Analyze &amp; Rewrite');
+  }, 300000);
+
+  try{
+    const res = await fetch(`${BACKEND_URL}/analyze`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ script, topic, mood, audience, platform: selectedImprovePlatform }),
+    });
+    if(!res.ok){ clearTimeout(analyzeTimeout); const e=await res.json(); showErr('improve',e.error||'Failed.'); return; }
+    await readSSE(res, msg=>{
+      if(msg.pct!==undefined) updateProgress(msg.pct,msg.label);
+      else if(msg.result){ clearTimeout(analyzeTimeout); renderResults(msg.result); }
+      else if(msg.error){ clearTimeout(analyzeTimeout); showErr('improve',msg.error); }
+    });
+  }catch(err){ clearTimeout(analyzeTimeout); showErr('improve','Cannot reach backend. Run: python backend.py'); }
+  finally{ clearTimeout(analyzeTimeout); setBtn('improveBtn',false,'⚡ Analyze &amp; Rewrite'); }
+}
+
+// ─── Render improve results ───────────────────────────────────
+function scoreColor(n){ return n>=8?'good':n>=6?'ok':'bad'; }
+function barColor(n){ return n>=8?'var(--accent3)':n>=6?'#f59e0b':'var(--red)'; }
+
+function renderScoreCard(score,label,isImproved=false){
+  if(!score)return'';
+  const dims=['hook','energy','clarity','retention','cta'];
+  const cls=isImproved?'imp':scoreColor(score.overall);
+  const dimsHtml=dims.map(d=>{
+    const s=score.dimensions?.[d]; if(!s)return'';
+    const pct=(s.score/10)*100;
+    return '<div class="score-dim"><span class="score-dim-label">'+d+'</span><div class="score-dim-bar"><div class="score-dim-fill" style="width:'+pct+'%;background:'+barColor(s.score)+'"></div></div><span class="score-dim-num" style="color:'+barColor(s.score)+'">'+s.score+'</span>'+(s.reason?'<span class="score-dim-reason">'+esc(s.reason)+'</span>':'')+'</div>';
+  }).join('');
+  const verdictHtml=score.verdict?'<div class="score-verdict">'+esc(score.verdict)+'</div>':'';
+  const scrollHtml=score.scroll_stop?'<div class="scroll-stop-badge" style="padding:6px 16px 0;font-size:11px;color:var(--muted)">scroll-stop test: '+esc(score.scroll_stop)+'</div>':'';
+  return '<div class="score-card '+(isImproved?'improved':'')+'"><div class="score-head"><span class="score-head-label '+(isImproved?'imp':'')+'">'+esc(label)+'</span><span><span class="score-overall '+cls+'">'+score.overall+'</span><span class="score-total"> /10</span></span></div><div class="score-dims">'+dimsHtml+'</div>'+scrollHtml+verdictHtml+'</div>';
+}
+
+function regenBar(id,label){
+  return '<div class="regen-bar"><div class="regen-row"><input class="regen-input" id="feedback-'+id+'" placeholder="What was wrong? e.g. too formal, change the hook, make it shorter..."/><button class="btn-regen" id="regen-btn-'+id+'" onclick="regenerateSection(\''+id+'\',\''+label+'\')">↺ Try again</button></div><div class="regen-hint">Optional — leave blank to regenerate</div></div>';
+}
+
+async function regenerateSection(sectionId,sectionLabel){
+  if(!lastResult)return;
+  const feedback=document.getElementById('feedback-'+sectionId)?.value.trim()||'';
+  const btn=document.getElementById('regen-btn-'+sectionId);
+  const impEl=document.getElementById('improved-'+sectionId);
+  const expEl=document.getElementById('explain-'+sectionId);
+  if(!impEl)return;
+  btn.disabled=true; btn.textContent='↺ Rewriting...';
+  const original=impEl.dataset.original||'';
+  const current=impEl.textContent;
+  try{
+    const res=await fetch(`${BACKEND_URL}/regenerate`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({section:sectionId,original,current,feedback,topic:lastResult.topic,platform:lastResult.platform||selectedImprovePlatform,audience:lastResult.audience,yt_style:lastResult.youtube_insights||'',script:document.getElementById('scriptInput').value}),
+    });
+    await readSSE(res, msg=>{
+      if(msg.result){
+        impEl.textContent=msg.result.improved||'';
+        if(expEl)expEl.textContent=msg.result.explanation||'';
+        impEl.style.transition='background .3s';
+        impEl.style.background='rgba(87,232,192,.08)';
+        setTimeout(()=>{impEl.style.background='';},1200);
+        if(document.getElementById('feedback-'+sectionId)) document.getElementById('feedback-'+sectionId).value='';
+      }
+    });
+  }catch(e){console.error(e);}
+  finally{btn.disabled=false;btn.textContent='↺ Try again';}
+}
+
+function renderResults(data){
+  lastResult=data;
+  const{topic,audience,platform,original_score,improved_score,youtube_insights,intro,middle,end,full_improved_script,research_summary}=data;
+  // Save to history (improved version)
+  if(full_improved_script && improved_score) saveToHistory(full_improved_script, improved_score, platform, topic, '');
+  let html='';
+
+  if(original_score&&improved_score){
+    const delta=(improved_score.overall-original_score.overall).toFixed(1);
+    const sign=delta>0?'+':'';
+    html+='<div class="score-compare">'+renderScoreCard(original_score,'Original',false)+renderScoreCard(improved_score,'Improved',true)+'</div>';
+    html+='<div style="background:var(--surface);border:1px solid rgba(232,255,87,.2);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;animation:fadeUp .35s ease both"><span style="font-size:20px">↑</span><div><span style="font-family:\'Syne\',sans-serif;font-size:18px;font-weight:800;color:var(--accent3)">'+sign+delta+' points</span><span style="font-size:12px;color:var(--muted);margin-left:8px">overall improvement</span></div><div style="margin-left:auto;font-size:11px;color:var(--muted);max-width:240px;text-align:right">'+esc((youtube_insights||'').substring(0,200))+'</div></div>';
+  }
+
+  if(audience){
+    const rs=research_summary||{};
+    html+='<div class="insights-bar"><div class="ins-header"><span class="tag-pill pill-topic">'+esc(topic||'')+'</span><span class="tag-pill pill-audience">'+esc(audience.age_group||'')+'</span>'+(platform?'<span class="tag-pill pill-platform">'+esc(platform)+'</span>':'')+'</div><div class="ins-row"><div class="ins-block"><div class="ins-label">Audience</div><p>'+esc(audience.audience||'')+'</p></div>'+(original_score?'<div class="ins-block"><div class="ins-label">Biggest problem</div><p>'+esc(original_score.verdict||'')+'</p></div>':'')+(rs.videos_analyzed?'<div class="ins-block"><div class="ins-label">Research</div><p>'+rs.videos_analyzed+' top videos · '+rs.hook_patterns_used+' hook patterns</p></div>':'')+'</div></div>';
+  }
+
+  [{label:'Intro',id:'intro',cls:'st-intro',d:intro},{label:'Middle',id:'middle',cls:'st-middle',d:middle},{label:'End',id:'end',cls:'st-end',d:end}].forEach((s,i)=>{
+    if(!s.d)return;
+    html+='<div class="sec-card" style="animation-delay:'+(0.1+i*.05)+'s"><div class="sec-head"><span class="sec-tag '+s.cls+'">'+s.label+'</span><span class="nw-badge">Needs work</span></div><div class="sec-body"><div class="sc-orig"><div class="sc-label sc-orig">Original</div><p>'+esc(s.d.original||'')+'</p></div><div class="sc-weak"><div class="sc-label sc-weak">⚠ Weak points</div><p>'+esc(s.d.weak_points||'')+'</p></div><div class="sc-imp"><div class="sc-label sc-imp">✓ Improved</div><p id="improved-'+s.id+'" data-original="'+esc(s.d.original||'')+'">'+esc(s.d.improved||'')+'</p></div><div class="sc-why"><div class="sc-label sc-why">Why this works</div><p id="explain-'+s.id+'">'+esc(s.d.explanation||'')+'</p></div></div>'+regenBar(s.id,s.label)+'</div>';
+  });
+
+  if(full_improved_script){
+    const safe=full_improved_script.replace(/\\/g,'\\\\').replace(/`/g,'\\`');
+    html+='<div class="full-script-card"><div class="full-head"><span class="full-title">✦ Full improved script</span><button class="btn-copy" onclick="copyText(this,`'+safe+'`)">⎘ Copy</button></div><div class="full-body" id="improved-full" data-original="'+esc(full_improved_script)+'">'+esc(full_improved_script)+'</div>'+regenBar('full','Full script')+'</div>';
+  }
+
+  document.getElementById('outputPanel').innerHTML=html;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+function copyText(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';setTimeout(()=>{btn.textContent='⎘ Copy';},2000);});
+}
+function setBtn(id,loading,label){
+  const btn=document.getElementById(id); if(!btn)return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?'<div style="width:14px;height:14px;border:2px solid rgba(12,12,12,.3);border-top-color:#0c0c0c;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></div> '+label:label;
+}
+function showErr(mode,msg){
+  const b=document.getElementById(mode+'ErrorBanner');
+  if(!b) return;
+  b.style.background='';
+  b.style.borderColor='';
+  b.style.color='';
+  if(msg.includes('RATE_LIMIT') || msg.includes('rate limit') || msg.includes('quota')){
+    b.innerHTML='⏳ <strong>AI is temporarily busy</strong> — please wait 30 seconds and try again.';
+  } else {
+    b.textContent='⚠ '+msg;
+  }
+  b.style.display='block';
+}
+function hideErr(mode){ const b=document.getElementById(mode+'ErrorBanner'); if(b)b.style.display='none'; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+const HIST_KEY = 'scriptboost_history_v1';
+const HIST_MAX = 3;
+
+function saveToHistory(script, score, platform, topic, contentType) {
+  if (!script || !score) return;
+  try {
+    const stored = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+    const entry = {
+      id: Date.now(),
+      script: script,
+      score: score.overall,
+      dimensions: score.dimensions || {},
+      platform: platform || '',
+      topic: topic || '',
+      contentType: contentType || '',
+      mode: contentType ? 'write' : 'improve',
+      date: new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})
+    };
+    stored.unshift(entry);
+    localStorage.setItem(HIST_KEY, JSON.stringify(stored.slice(0, HIST_MAX)));
+  } catch(e) { console.warn('History save failed:', e); }
+}
+
+function openHistory() {
+  const overlay = document.getElementById('historyOverlay');
+  if (!overlay) return;
+  renderHistoryList();
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHistory() {
+  const overlay = document.getElementById('historyOverlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function clearHistory() {
+  if (!confirm('Clear all saved scripts?')) return;
+  localStorage.removeItem(HIST_KEY);
+  renderHistoryList();
+}
+
+function renderHistoryList() {
+  const list  = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  if (!list || !empty) return;
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch(e) {}
+
+  if (!stored.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = stored.map((entry, idx) => {
+    const s = entry.score;
+    const scoreClass = s >= 8 ? 'good' : s >= 6 ? 'ok' : 'bad';
+    const scoreColor = s >= 8 ? 'var(--accent3)' : s >= 6 ? '#f59e0b' : 'var(--red)';
+    const modeBadge = entry.mode === 'improve'
+      ? '<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(255,107,107,0.1);color:var(--accent2);border:1px solid rgba(255,107,107,0.2);border-radius:4px;padding:2px 7px">Improved</span>'
+      : '<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(232,255,87,0.1);color:var(--accent);border:1px solid rgba(232,255,87,0.2);border-radius:4px;padding:2px 7px">Written</span>';
+
+    // Score dimension bars — just bars, no number labels
+    const dims = ['hook','energy','clarity','retention','cta'];
+    const dimBars = dims.map(d => {
+      const dScore = entry.dimensions && entry.dimensions[d] ? entry.dimensions[d].score : 0;
+      const dColor = dScore >= 8 ? 'var(--accent3)' : dScore >= 6 ? '#f59e0b' : 'var(--red)';
+      const pct = (dScore / 10) * 100;
+      return '<div style="display:flex;align-items:center;gap:6px">'
+        + '<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);width:56px;flex-shrink:0">' + d + '</span>'
+        + '<div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + dColor + ';border-radius:2px;transition:width .6s ease"></div></div>'
+        + '</div>';
+    }).join('');
+
+    // Full script — formatted with energy tags, no truncation
+    const formattedFull = formatScript(entry.script || '');
+
+    return '<div class="hist-card" style="animation-delay:' + (idx * 0.07) + 's">'
+      // Header — platform/topic tags left, overall score right
+      + '<div class="hist-card-head">'
+        + '<div class="hist-card-meta">'
+          + modeBadge
+          + (entry.platform ? '<span class="tag-pill pill-platform">' + esc(entry.platform) + '</span>' : '')
+          + (entry.topic ? '<span class="tag-pill pill-topic">' + esc(entry.topic.substring(0,40)) + '</span>' : '')
+          + (entry.contentType ? '<span class="tag-pill" style="background:rgba(87,232,192,0.08);color:var(--accent3);border:1px solid rgba(87,232,192,0.2)">' + esc(entry.contentType) + '</span>' : '')
+        + '</div>'
+        + '<span style="font-family:\'Syne\',sans-serif;font-size:22px;font-weight:800;color:' + scoreColor + '">'
+          + s + '<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
+      + '</div>'
+      // Score bars only — no numbers next to them
+      + '<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,0.15)">'
+        + dimBars
+      + '</div>'
+      // Full script — no max-height, no fade, complete text with energy tags
+      + '<div style="padding:18px 20px;font-size:13px;color:var(--text);line-height:1.8">' + formattedFull + '</div>'
+      // Footer
+      + '<div class="hist-actions">'
+        + '<button class="hist-copy-btn" id="hist-copy-' + idx + '">⎘ Copy script</button>'
+        + '<span class="hist-date">' + esc(entry.date) + '</span>'
+        + '<button class="hist-delete-btn" id="hist-del-' + idx + '" title="Delete this script">🗑</button>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  // Wire copy + delete buttons after DOM is rendered
+  stored.forEach((entry, idx) => {
+    const copyBtn = document.getElementById('hist-copy-' + idx);
+    if (copyBtn) {
+      const cleanText = (entry.script || '').replace(/\[(energetic|calm|surprised|serious|excited|hook|pause|quiet|direct|trail off)\]\s*/gi, '').trim();
+      copyBtn.addEventListener('click', () => copyText(copyBtn, cleanText));
+    }
+    const delBtn = document.getElementById('hist-del-' + idx);
+    if (delBtn) {
+      delBtn.addEventListener('click', () => confirmDeleteEntry(entry.id));
+    }
+  });
+}
+
+// Close overlay when clicking the dark backdrop
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('historyOverlay');
+  if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) closeHistory(); });
+});
+
+function confirmDeleteEntry(entryId) {
+  // Remove any existing confirm modal first
+  const existing = document.getElementById('delConfirmModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'delConfirmModal';
+  modal.className = 'del-confirm-overlay';
+  modal.innerHTML =
+    '<div class="del-confirm-box">'
+      + '<p><strong>Delete this script?</strong><br>This can\'t be undone.</p>'
+      + '<div class="del-confirm-actions">'
+        + '<button class="del-btn-cancel" id="delCancelBtn">Cancel</button>'
+        + '<button class="del-btn-confirm" id="delConfirmBtn">Yes, delete it</button>'
+      + '</div>'
+    + '</div>';
+  document.body.appendChild(modal);
+
+  document.getElementById('delCancelBtn').onclick = () => modal.remove();
+  document.getElementById('delConfirmBtn').onclick = () => {
+    modal.remove();
+    deleteHistoryEntry(entryId);
+  };
+  // Click backdrop to cancel
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function deleteHistoryEntry(entryId) {
+  try {
+    let stored = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+    stored = stored.filter(e => e.id !== entryId);
+    localStorage.setItem(HIST_KEY, JSON.stringify(stored));
+    renderHistoryList();
+  } catch(e) { console.warn('Delete failed:', e); }
+}
+</script>
+
+<!-- ── HISTORY OVERLAY — must be outside script tag ──────────────── -->
+<div id="historyOverlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(8,8,8,0.93);backdrop-filter:blur(14px);overflow-y:auto">
+  <div style="max-width:780px;margin:0 auto;padding:40px 24px 80px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff">Script History</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Your last 3 generated scripts — write or improve</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="clearHistory()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Clear all</button>
+        <button onclick="closeHistory()" style="font-size:22px;color:var(--muted);background:none;border:none;cursor:pointer;line-height:1;padding:4px 8px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</button>
+      </div>
+    </div>
+    <div id="historyList"></div>
+    <div id="historyEmpty" style="display:none;text-align:center;padding:80px 0;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:14px;opacity:.4">📄</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#444;margin-bottom:6px">No scripts yet</div>
+      <div style="font-size:13px;color:#333">Write or improve a script — it'll show up here automatically.</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

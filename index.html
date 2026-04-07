@@ -342,7 +342,8 @@ footer{border-top:1px solid var(--border);padding:16px 48px;display:flex;align-i
             <div class="trend-chip-skeleton" style="width:80px"></div>
           </div>
         </div>
-        <textarea class="ftextarea" id="writeTopicInput" style="min-height:100px" placeholder="e.g. I want to make a TikTok ad for the Keychron K2 mechanical keyboard targeting people who type a lot for work. The keyboard is $90, hot-swappable, works on Mac and Windows, and has great battery life."></textarea>
+        <textarea class="ftextarea" id="writeTopicInput" style="min-height:100px" placeholder="e.g. I want to make a TikTok ad for the Keychron K2 mechanical keyboard targeting people who type a lot for work. The keyboard is $90, hot-swappable, works on Mac and Windows, and has great battery life." oninput="checkBriefLength(this)"></textarea>
+        <div id="briefWordCount" style="font-size:10px;color:var(--muted);text-align:right;margin-top:3px">0 / 300 words</div>
       </div>
 
       <div class="field-group">
@@ -360,8 +361,6 @@ footer{border-top:1px solid var(--border);padding:16px 48px;display:flex;align-i
         <select class="fselect" id="writeLengthInput">
           <option value="short">Short (15-30 sec / ~60 words)</option>
           <option value="medium" selected>Medium (30-60 sec / ~120 words)</option>
-          <option value="long">Long (1-3 min / ~300 words)</option>
-          <option value="full">Full video (5-10 min / ~800 words)</option>
         </select>
       </div>
 
@@ -476,12 +475,10 @@ footer{border-top:1px solid var(--border);padding:16px 48px;display:flex;align-i
 </div>
 
 <footer>
-  <span><span class="s-dot"></span>Gemini 2.5 Flash · ScriptBoost v4</span>
-  <span>Free while in beta</span>
 </footer>
 
 <script>
-const BACKEND_URL = 'https://web-production-8a655.up.railway.app';
+const BACKEND_URL = 'http://localhost:5000';
 let selectedWritePlatform = 'YouTube';
 let selectedImprovePlatform = 'YouTube';
 let currentMode = 'write';
@@ -829,6 +826,15 @@ function formatScript(raw){
   return html;
 }
 
+function checkBriefLength(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean).length;
+  const counter = document.getElementById('briefWordCount');
+  if (counter) {
+    counter.textContent = `${words} / 300 words`;
+    counter.style.color = words > 300 ? 'var(--red)' : words > 250 ? '#f59e0b' : 'var(--muted)';
+  }
+}
+
 // ─── WRITE SCRIPT ─────────────────────────────────────────────
 async function writeScript(){
   const topic   = document.getElementById('writeTopicInput').value.trim();
@@ -837,11 +843,13 @@ async function writeScript(){
   const length  = document.getElementById('writeLengthInput').value;
   if(!topic){ showErr('write','Please describe your video first.'); return; }
 
-  // Brief length warning — better brief = better script
   const wordCount = topic.split(/\s+/).filter(Boolean).length;
   if(wordCount < 15){
-    showErr('write','⚡ Tip: Your brief is short. Add more detail — product name, key features, who it\'s for, what makes it special. The AI writes much better scripts with more to work with.');
-    // Don't block — just warn, let them proceed
+    showErr('write','⚡ Your brief is too short — add more detail. Minimum 15 words.');
+    return; // block — don't proceed with too short brief
+  } else if(wordCount > 300){
+    showErr('write','⚡ Your brief is too long — maximum 300 words. Trim it down to the key facts.');
+    return; // block — don't proceed with too long brief
   } else {
     hideErr('write');
   }

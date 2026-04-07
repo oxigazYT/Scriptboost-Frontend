@@ -879,6 +879,7 @@ async function writeScript(){
 function renderWriteResult(data){
   const{script, score, topic, audience, platform, hook_used, hook_text, all_hooks, research_notes, word_count, content_type} = data;
   const sc = score||{};
+  const scOverall = parseFloat(sc.overall) || 0;  // always a number, never NaN
 
   // Score bars
   const dims = ['hook','energy','clarity','retention','cta'];
@@ -922,14 +923,13 @@ function renderWriteResult(data){
         '</div>'
         // Score prominently in the header
         +'<div style="display:flex;align-items:center;gap:10px">'
-          +'<span style="font-family:\'Syne\',sans-serif;font-size:28px;font-weight:800;color:'+(sc.overall>=8?'var(--accent3)':sc.overall>=6?'#f59e0b':'var(--red)')+'">'+((sc.overall && !isNaN(sc.overall)) ? parseFloat(sc.overall).toFixed(1) : '—')+'<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
+          +'<span style="font-family:\'Syne\',sans-serif;font-size:28px;font-weight:800;color:'+(scOverall>=8?'var(--accent3)':scOverall>=6?'#f59e0b':'var(--red)')+'">'+( scOverall > 0 ? scOverall.toFixed(1) : '—')+'<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
           +'<button class="btn-copy" id="write-copy-btn">⎘ Copy</button>'
         +'</div>'
       +'</div>'
       // Score bars right under header
       +'<div class="score-dims" style="padding:10px 18px 6px;border-bottom:1px solid var(--border)">'+dimsHtml+'</div>'
       +(sc.verdict?'<div class="score-verdict" style="padding:6px 18px 10px;border-bottom:1px solid var(--border)">'+esc(sc.verdict)+'</div>':'')+
-      // Script body with energy tag formatting
       +'<div style="padding:20px 20px;font-size:13.5px;color:var(--text)">'+formatScript(script||'')+'</div>'
       // Hook used
       +(hook_used?'<div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Hook pattern used</span><span style="font-size:12px;color:var(--accent)">'+esc(hook_used)+'</span></div>':'')+

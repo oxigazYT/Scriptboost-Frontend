@@ -1142,6 +1142,7 @@ function renderScoreCard(score,label,isImproved=false){
   if(!score)return'';
   const dims=['hook','energy','clarity','retention','cta'];
   const cls=isImproved?'imp':scoreColor(score.overall);
+  const displayScore=(score.overall&&!isNaN(parseFloat(score.overall)))?parseFloat(score.overall).toFixed(1):'—';
   const dimsHtml=dims.map(d=>{
     const s=score.dimensions?.[d]; if(!s)return'';
     const pct=(s.score/10)*100;
@@ -1149,7 +1150,7 @@ function renderScoreCard(score,label,isImproved=false){
   }).join('');
   const verdictHtml=score.verdict?'<div class="score-verdict">'+esc(score.verdict)+'</div>':'';
   const scrollHtml=score.scroll_stop?'<div class="scroll-stop-badge" style="padding:6px 16px 0;font-size:11px;color:var(--muted)">scroll-stop test: '+esc(score.scroll_stop)+'</div>':'';
-  return '<div class="score-card '+(isImproved?'improved':'')+'"><div class="score-head"><span class="score-head-label '+(isImproved?'imp':'')+'">'+esc(label)+'</span><span><span class="score-overall '+cls+'">'+score.overall+'</span><span class="score-total"> /10</span></span></div><div class="score-dims">'+dimsHtml+'</div>'+scrollHtml+verdictHtml+'</div>';
+  return '<div class="score-card '+(isImproved?'improved':'')+'"><div class="score-head"><span class="score-head-label '+(isImproved?'imp':'')+'">'+esc(label)+'</span><span><span class="score-overall '+cls+'">'+ displayScore +'</span><span class="score-total"> /10</span></span></div><div class="score-dims">'+dimsHtml+'</div>'+scrollHtml+verdictHtml+'</div>';
 }
 
 function regenBar(id,label){

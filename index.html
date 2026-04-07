@@ -478,7 +478,7 @@ footer{border-top:1px solid var(--border);padding:16px 48px;display:flex;align-i
 </footer>
 
 <script>
-const BACKEND_URL = 'https://web-production-8a655.up.railway.app';
+const BACKEND_URL = 'http://localhost:5000';
 let selectedWritePlatform = 'YouTube';
 let selectedImprovePlatform = 'YouTube';
 let currentMode = 'write';
@@ -922,7 +922,7 @@ function renderWriteResult(data){
         '</div>'
         // Score prominently in the header
         +'<div style="display:flex;align-items:center;gap:10px">'
-          +'<span style="font-family:\'Syne\',sans-serif;font-size:28px;font-weight:800;color:'+(sc.overall>=8?'var(--accent3)':sc.overall>=6?'#f59e0b':'var(--red)')+'">'+((sc.overall)||'—')+'<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
+          +'<span style="font-family:\'Syne\',sans-serif;font-size:28px;font-weight:800;color:'+(sc.overall>=8?'var(--accent3)':sc.overall>=6?'#f59e0b':'var(--red)')+'">'+((sc.overall && !isNaN(sc.overall)) ? parseFloat(sc.overall).toFixed(1) : '—')+'<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
           +'<button class="btn-copy" id="write-copy-btn">⎘ Copy</button>'
         +'</div>'
       +'</div>'

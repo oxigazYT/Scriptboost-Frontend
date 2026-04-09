@@ -1302,7 +1302,8 @@ function renderHistoryList() {
   empty.style.display = 'none';
 
   list.innerHTML = stored.map((entry, idx) => {
-    const s = entry.score;
+    const s = parseFloat(entry.score) || 0;
+    const sDisplay = s > 0 ? s.toFixed(1) : '—';
     const scoreClass = s >= 8 ? 'good' : s >= 6 ? 'ok' : 'bad';
     const scoreColor = s >= 8 ? 'var(--accent3)' : s >= 6 ? '#f59e0b' : 'var(--red)';
     const modeBadge = entry.mode === 'improve'
@@ -1334,7 +1335,7 @@ function renderHistoryList() {
           + (entry.contentType ? '<span class="tag-pill" style="background:rgba(87,232,192,0.08);color:var(--accent3);border:1px solid rgba(87,232,192,0.2)">' + esc(entry.contentType) + '</span>' : '')
         + '</div>'
         + '<span style="font-family:\'Syne\',sans-serif;font-size:22px;font-weight:800;color:' + scoreColor + '">'
-          + s + '<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
+          + sDisplay + '<span style="font-size:13px;font-weight:400;color:var(--muted)">/10</span></span>'
       + '</div>'
       // Score bars only — no numbers next to them
       + '<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,0.15)">'
